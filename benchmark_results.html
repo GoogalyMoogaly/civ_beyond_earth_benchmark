@@ -1,0 +1,124 @@
+<html>
+<head>
+<title>Civ: Beyond Earth - Benchmark Interpreter</title>
+<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+<script type="text/javascript">
+function calculate() {
+	var input = document.getElementById('input').value;
+	var frametimes = input.split(',');
+	if (frametimes.length != 0) {
+		var total = 0;
+		var min = 1000000000;
+		var max = 0;
+		for (var i = 0; i < frametimes.length; i++) {
+			frametime = frametimes[i];
+			if (frametime != 0) {
+				total += parseFloat(frametime);
+				currentFps = 1000/parseFloat(frametime);
+				if (currentFps < min) {
+					min = currentFps;
+				}
+				if (currentFps > max) {
+					max = currentFps;
+				}
+			} else {
+				frametimes.splice(i,1);
+			}
+		}
+		var avg = 1000/(total/frametimes.length);
+		document.getElementById('result_values').style.border = 'solid';
+		document.getElementById('min').innerHTML = 'Min FPS: <b>' + min.toFixed(6) + '</b>';
+		document.getElementById('avg').innerHTML = '<big><big>Avg FPS: <b>' + avg.toFixed(6) + '</b></big></big>';
+		document.getElementById('max').innerHTML = 'Max FPS: <b>' + max.toFixed(6) + '</b>';
+
+		drawChart(frametimes, avg);
+
+		frametimes.sort(function(a, b){return a-b});
+		var index = frametimes.length*0.99;
+		var percentile = 0;
+		if (index % 1 != 0) {
+			index = Math.ceil(index);
+			percentile = frametimes[index];
+		} else {
+			percentile = (frametimes[index] + frametimes[index + 1])/2;
+		}
+
+		document.getElementById('result_values_2').style.border = 'solid';
+		document.getElementById('min_ft').innerHTML = 'Min frametime: <b>' + frametimes[0] + 'ms</b>';
+		document.getElementById('percentile_ft').innerHTML = '<big><big>99th Percentile: <b>' + percentile + 'ms (' + (1000/parseFloat(percentile)).toFixed(6) + ' fps)</b></big></big>';
+		document.getElementById('max_ft').innerHTML = 'Max Frametime: <b>' + frametimes[frametimes.length-1] + 'ms</b>';
+
+		drawChartFT(frametimes, percentile);
+	}
+}
+
+google.load("visualization", "1", {packages:["corechart"]});
+function drawChart(frametimes, avg) {
+	var data = google.visualization.arrayToDataTable(getData(frametimes, avg));
+
+	var options = {
+	  title: 'FPS Graph',
+	  vAxis: { title: 'fps'},
+	  hAxis: { title: 'frames'}
+	};
+
+	var chart = new google.visualization.LineChart(document.getElementById('graph'));
+
+	chart.draw(data, options);
+}
+
+function getData(frametimes, avg) {
+	var data = [['','fps','Average']];
+	for(i = 0; i < frametimes.length; i++) {
+		entry = [i, 1000/parseFloat(frametimes[i]), avg];
+		data.push(entry);
+	}
+	return data;
+}
+
+function drawChartFT(frametimes, percentile) {
+	var data = google.visualization.arrayToDataTable(getDataFT(frametimes, percentile));
+
+	var options = {
+	  title: 'Frametime Graph',
+	  vAxis: { title: 'frametimes'},
+	  hAxis: { title: 'frames'}
+	};
+
+	var chart = new google.visualization.LineChart(document.getElementById('graph_2'));
+
+	chart.draw(data, options);
+}
+
+function getDataFT(frametimes, percentile) {
+	var data = [['','frametimes','99th Percentile']];
+	for(i = 0; i < frametimes.length; i++) {
+		entry = [i, parseFloat(frametimes[i]), parseFloat(percentile)];
+		data.push(entry);
+	}
+	return data;
+}
+
+</script>
+</head>
+<body>
+<textarea cols="150" rows="15" id="input"></textarea><br/><br/>
+<input type="button" value="Calculate FPS" onclick="calculate()" />
+<br/><br/><br/>
+<div align='center' id='results'>
+<div align='center' style="width: 25%" id="result_values">
+	<span id="min"></span><br/>
+	<span id="avg"></span><br/>
+	<span id="max"></span><br/>
+</div><br/>
+<div id="graph"></div>
+<br/><br/>
+<div align='center' style="width: 50%" id="result_values_2">
+	<span id="min_ft"></span><br/>
+	<span id="percentile_ft"></span><br/>
+	<span id="max_ft"></span><br/>
+</div><br/>
+<div id="graph_2"></div>
+</div>
+</body>
+</html>
